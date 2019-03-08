@@ -1,6 +1,6 @@
 ---
 Author: Eduardo Abdala Rivera
-Title: Health Machine Learning Initiative
+Title: Recess Health Machine Learning Initiative
 ---
 
 # Recess Health Machine Learning Initiative
@@ -534,7 +534,7 @@ The latter three models will include behavioral data such as:
 
 Windows 10, Mac OS X, Linux ([Solus](https://github.com/solus-project/budgie-desktop))
 
-Kraken (proprietary data science platform used by [BigSquid](https://bigsquid.com)
+Kraken (proprietary data science platform used by [BigSquid])(https://bigsquid.com)
 
 [Snowflake](https://snowflake.com)
 
