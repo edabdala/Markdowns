@@ -1,6 +1,6 @@
 ---
 Author: Eduardo Abdala Rivera
-Title: Health Machine Learning Initiative
+Title: Recess Health Machine Learning Initiative
 ---
 
 # Recess Health Machine Learning Initiative
@@ -67,7 +67,7 @@ axes.set_xlim([0,120])
 axes.set_ylim([0.4450])
 ```
 
-![scatterbig](/home/edabdala/Pictures/scatterbig.png)![scattersmall](/home/edabdala/Pictures/scattersmall.png)
+![scatterbig.png](/home/edabdala/Pictures/scatterbig.png)![scattersmall.png](/home/edabdala/Pictures/scattersmall.png)
 
 We found that most patients will PIF in 16 days with average at 67 days. This will be useful information used to compare any implemented machine learning-driven policy. We want to see if an optimized model will allow us to bring our days_to_pif number down, effectively shortening the amount of time it takes for us to close an account and free up company resources.
 
