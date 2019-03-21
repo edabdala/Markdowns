@@ -7,24 +7,24 @@ Title: Recess Health Machine Learning Initiative
 
 ### Goals
 
-- Explore which machine learning algorithms can be applied to Recess Health use cases
-- Shift the company revenue cycle to the left (faster balance payment) and up (increase overall balance payment)
-- Describe patient's propensity to pay in 120 days in terms of feature importance
-- Implement data-driven policies that will improve patient satisfaction post-bill initiation
-
-
+- Explore which machine learning algorithms can be applied to the PFS use case
+- Shift the company revenue cycle to the left (faster balance payment) and up (increase overall balance payment) while decreasing cost to collect
+- Describe patient's propensity to pay in 0, 18, 30, 45, 60, 75, 90 days as a function of our model features
+- Operationalize optimized policy over incumbent policy
 
 ### Introduction
 
-With the advent of machine learning in the last decade, machine learning is proving effective in providing business insights and solutions to problems that are more nuanced for humans to solve. Many algorithms have been designed for different research questions and types of data. Our goal is to provide a reproducible use case for the medical billing revenue cycle space that optimizes the allocation of company resources with regards to time spent calling and other considerations.
+With the advancements of computational power in the last decade, machine learning is proving effective in providing business insights and solutions to problems that are more nuanced for humans to solve. Many algorithms have been designed for different research questions and types of data. Our goal is to provide a reproducible use case for the healthcare revenue cycle space that optimizes the allocation of company resources with regards to time spent calling and other considerations.
 
-An algorithm of interest is the gradient boosted decision tree. This involves optimizing a loss function, using "weak learners" to train the model, and an additive model that adds more weak learners such that:
+An algorithm of interest is the Gradient Boosted Regression Trees (GBRT). GBRT can be used in the context of medical billing revenue to optimize resource allocation (van de Greer et al., 2018). These researchers set up a binary classification model to predict if a patient will pay based on their current state. Their results showed more money collected per call and overall, while calling debtors less. Our goal is to apply this methodology to our use case and replicate these results.
+
+GBRT involves optimizing a loss function, using "weak learners" to train the model, and an additive model that adds more weak learners such that:
 $$
 \begin{align*}
 F(x) = \sum_{m=1}^{M} \gamma_m h_m(x)
 \end{align*}
 $$
-where $\ h_{m}(x)$ are the weak learners.
+where $\ h_{m}(x)$ are the weak learners. The weak learners are created serially and each successive tree has a change to correct the previous one. Gradient Boosting tries to fit the new tree to residual errors made by the previous tree. This algorithm has been seen to be very effective at solving complex problems, winning many machine learning competitions. However, this algorithm is complex and its effectiveness can be hurt by not setting the parameters correctly. The main parameters to the sci-kit functions are `learning_rate` and `max_depth`. This will control against overfitting your model.
 
 
 
@@ -32,7 +32,7 @@ where $\ h_{m}(x)$ are the weak learners.
 
 Dialer qualification takes all of the info from active accounts and determines if we should call them based on [established criteria.](https://github.com/RecessHealth/Documentation/blob/master/current_scoring_criteria)
 
-Preliminary data exploration found a few key metrics. A data set was imported to Jupyter notebook using the datascience package.
+Preliminary data exploration found a few key metrics described below. A data set was imported to Jupyter notebook using the datascience package.
 
 ```python
 from datascience import *
@@ -67,7 +67,7 @@ axes.set_xlim([0,120])
 axes.set_ylim([0.4450])
 ```
 
-![scatterbig.png](/home/edabdala/Pictures/scatterbig.png)![scattersmall.png](/home/edabdala/Pictures/scattersmall.png)
+![scatterbig](/home/edabdala/Pictures/scatterbig.png)![scattersmall](/home/edabdala/Pictures/scattersmall.png)
 
 We found that most patients will PIF in 16 days with average at 67 days. This will be useful information used to compare any implemented machine learning-driven policy. We want to see if an optimized model will allow us to bring our days_to_pif number down, effectively shortening the amount of time it takes for us to close an account and free up company resources.
 
@@ -133,13 +133,13 @@ Statistics shown inside of Kraken that help assist in determining which algorith
 
 
 
-**Kraken Scoring and Processing as it Relates to Recess’ Models:**
+#### Kraken Model Iterations
 
 **First Model**
 
 In the first model created for Recess by Kyle Jourdan, the highest scoring algorithm (in terms of an F1 score) was an XGBoost Classifier. This model was chosen from scores presented after unsupervised learning on the appended training set that was fed into Kraken. The information contained in the dataset used for this model can be found under the header “First Model Built”
 
-TheXGBoost algorithm is a highly sophisticated implementation of gradient boosting algorithms. The advantages to using XGBoost to model are its regularization of data, and ability to handle missing values. The automated technology of Kraken automatically handles that optimization.  
+TheXGBoost algorithm is a highly sophisticated implementation of gradient boosting algorithms. The advantages to using XGBoost to model are its regularization of data, and ability to handle missing values. The automated technology of Kraken automatically handles that optimization. 
 
 **Second Model**  
 
@@ -149,171 +149,19 @@ The Random Forest Classifier was chosen from scores presented after learning on 
 
 **Third Model**  
 
-The third model built for Recess was built to predict at 30 days after assignment who would PIF in 120 days. *Statistics to follow: Jay is compiling this dataset and will run it through Kraken*.  
+The third model built for Recess was built to predict at 30 days after assignment who would PIF in 120 days. *Statistics to follow: Jay is compiling this dataset and will run it through Kraken*. 
 
-**First Model Built:**  
+3/12 - We encountered an issue with the data. We think that there may be a problem with commas in our csv. Kraken is dropping vital features to our column. It is saying that there are more than 50% null values in all of our PIF_in_x columns. We cannot move forward with our model until this is solved.
+
+> Once this csv is fixed, I want to run our model without state_name.  I think this attribute is uninformative and adds noise, while already being a low influencer. Most of our data is from New Jersey anyway and there is a chance the model can learn rules that are not intended (ex. States that have 'New' in the name are more likely to PIF) - Eddy
+
+SQL Queries used for the models can be found at: https://github.com/RecessHealth/Documentation/blob/master/SQL_Queries.txt
+
+**First Model In-Depth:**  
 
 Kyle Jourdan had access to RWJ Barnabas data first and built an initial model. That model included the following features (i.e. columns/ data points):
 
 ![Screenshot from 2019-03-08 14_38_26](/home/edabdala/Downloads/Screenshot from 2019-03-08 14_38_26.png)
-
-The SQL query that was used to create base table as defined above is as follows:  
-
-CREATE OR REPLACE TABLE "KRAKEN_PIF_120_STAGE"
-
-AS
-
-SELECT "a"."account_id"
-
-​    ,"a"."client_id"
-
-​    ,"a"."patient_age"
-
-​    ,"a"."zip_code"
-
-​    ,COALESCE("b"."CITY_NAME",'UNKNOWN') AS "city_name"
-
-​    ,COALESCE("b"."COUNTY_NAME",'UNKNOWN') AS "county_name"
-
-​    ,COALESCE("b"."STATE_NAME",'UNKNOWN') AS "state_name"
-
-​    ,COALESCE("b"."POPULATION",0) AS "population_estimate"
-
-​    ,COALESCE("b"."DENSITY",0.00) AS "density_estimate"
-
-​    ,COALESCE("b"."TIMEZONE",'UNKNOWN') AS "local_timezone"
-
-​    ,"a"."financial_class"
-
-​    ,"a"."patient_type"
-
-​    ,"a"."med_service"
-
-​    ,"a"."status_code"
-
-​    ,"a"."previous_status_code"
-
-​    ,"a"."employer_known"
-
-​    ,"a"."is_employed"
-
-​    ,"a"."assigned_date"
-
-​    ,YEAR("a"."assigned_date") AS "assigned_year"
-
-​    ,MONTH("a"."assigned_date") AS "assigned_month"
-
-​    ,WEEK("a"."assigned_date") AS "assigned_week"
-
-​    ,"a"."initial_balance"
-
-​    ,"a"."cancelled_balance"
-
-​    ,"a"."paid_in_30"
-
-​    ,"a"."paid_in_60"
-
-​    ,"a"."paid_in_90"
-
-​    ,"a"."paid_in_120"
-
-​    ,"a"."paid_in_180"
-
-​    ,"a"."paid_in_365"
-
-​    ,COALESCE("a"."transaction_total",0.00) AS "transaction_total"
-
-​    ,"a"."transaction_count"
-
-​    ,"a"."trans_in_30"
-
-​    ,"a"."trans_in_60"
-
-​    ,"a"."trans_in_90"
-
-​    ,"a"."trans_in_120"
-
-​    ,CASE WHEN CURRENT_DATE() < DATEADD('day',120,"a"."assigned_date") AND ("a"."paid_in_120" < "a"."initial_balance") THEN NULL ELSE
-
-​        CASE WHEN "a"."initial_balance" = 0 THEN 'false' ELSE
-
-​            CASE WHEN ("a"."paid_in_120" / "a"."initial_balance") >= 0.9 THEN 'true' ELSE 'false' END
-
-​        END
-
-​     END AS "pif_in_120"
-
-FROM (
-
-SELECT "a"."ACCOUNT_ID" AS "account_id"
-
-​    ,"a"."CLIENT_ID" AS "client_id"
-
-​    ,"a"."PATIENT_AGE" AS "patient_age"
-
-​    ,LEFT(LPAD("a"."ZIP_CODE",5,'0'),5) AS "zip_code"
-
-​    ,COALESCE(NULLIF(NULLIF("a"."FINANCIAL_CLASS",'NULL'),''),'UNKNOWN') AS "financial_class"
-
-​    ,COALESCE(NULLIF(NULLIF("a"."PATIENT_TYPE",'NULL'),''),'UNKNOWN') AS "patient_type"
-
-​    ,COALESCE(NULLIF(NULLIF("a"."MED_SERVICE",'NULL'),''),'UNKNOWN') AS "med_service"
-
-​    ,"a"."STATUS_CODE" AS "status_code"
-
-​    ,"a"."PREVIOUS_STATUS_CODE" AS "previous_status_code"
-
-​    ,CASE WHEN "a"."EMPLOYER" IN ('NULL','UNKNOWN') THEN '0' ELSE '1' END AS "employer_known"
-
-​    ,"a"."EMPLOYED" AS "is_employed"
-
-​    ,"a"."ASSIGNED_DATE"::DATE AS "assigned_date"
-
-​    ,"a"."LETTERS_SENT" AS "letter_sent"
-
-​    ,"a"."INITIAL_BALANCE" AS "initial_balance"
-
-​    ,"a"."CANCELLED_AMOUNT" AS "cancelled_balance"
-
-​    ,COUNT(DISTINCT "b"."ID") AS "transaction_count"
-
-​    ,COUNT(DISTINCT CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',30,"a"."ASSIGNED_DATE"::DATE) THEN "b"."ID" END) AS "trans_in_30"
-
-​    ,COUNT(DISTINCT CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',60,"a"."ASSIGNED_DATE"::DATE) THEN "b"."ID" END) AS "trans_in_60"
-
-​    ,COUNT(DISTINCT CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',90,"a"."ASSIGNED_DATE"::DATE) THEN "b"."ID" END) AS "trans_in_90"
-
-​    ,COUNT(DISTINCT CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',120,"a"."ASSIGNED_DATE"::DATE) THEN "b"."ID" END) AS "trans_in_120"
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',30,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_30"
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',60,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_60"
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',90,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_90"
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',120,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_120"
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',180,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_180"
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',365,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_365"
-
-​    ,COALESCE(SUM("b"."AMOUNT"),'0.00') AS "transaction_total"
-
-FROM "SQUIDBITS"."PFS_GROUP"."ACCOUNTS" AS "a"
-
-LEFT JOIN "SQUIDBITS"."PFS_GROUP"."TRANSACTION_RECORDS" AS "b" ON "a"."ACCOUNT_ID" = "b"."ACCOUNT_ID"
-
-WHERE "a"."CLIENT_ID" LIKE 'BH%'
-
-GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
-
-) AS "a"
-
-LEFT JOIN "SQUIDBITS"."PFS_GROUP"."ZIP_DETAILS" AS "b" ON "a"."zip_code" = LPAD("b"."ZIP_CODE",5,'0')
-
-WHERE "a"."transaction_total" >= 0 /*AND "a"."assigned_date" < CURRENT_DATE()-140*/
-
-The aforementioned SQL query was put into the cloud-based data warehouse platform Snowflake.   
 
 When placed into Big Squid’s product, Kraken, this initial model was performing at an 82.8% accuracy and a .854 AUC.  
 
@@ -327,183 +175,6 @@ The columns that we had to take out of the model due to them causing data leakag
 
 - If they paid in full by days 30, 60, 90, 120, 180, and 365
 - Transaction total amounts at days 30, 60, 90,120,180, and 365
-
-
-The new model was run with the following SQL query:  
-
-SELECT  
-
-​     "a"."account_id"
-
-​    ,"a"."client_id"::VARCHAR AS "client_id"
-
-​    ,"a"."patient_age"
-
-​    ,"a"."zip_code"
-
-​    ,COALESCE("b"."CITY_NAME",'UNKNOWN') AS "city_name"
-
-​    ,COALESCE("b"."COUNTY_NAME",'UNKNOWN') AS "county_name"
-
-​    ,COALESCE("b"."STATE_NAME",'UNKNOWN') AS "state_name"
-
-​    ,COALESCE("b"."POPULATION",0) AS "population_estimate"
-
-​    ,COALESCE("b"."DENSITY",0.00) AS "density_estimate"
-
-​    ,COALESCE("b"."TIMEZONE",'UNKNOWN') AS "local_timezone"
-
-​    ,"a"."financial_class"
-
-​    ,"a"."patient_type"
-
-​    ,"a"."med_service"
-
-​    ,"a"."status_code"
-
-​    ,"a"."previous_status_code"
-
-​    ,"a"."employer_known"
-
-​    ,"a"."is_employed"
-
-​    ,"a"."assigned_date"
-
-​    ,YEAR("a"."assigned_date") AS "assigned_year"
-
-​    ,MONTH("a"."assigned_date") AS "assigned_month"
-
-​    ,WEEK("a"."assigned_date") AS "assigned_week"
-
-​    ,"a"."initial_balance"
-
-​    ,"a"."cancelled_balance"
-
-​    ,"a"."paid_in_30"
-
-​    ,"a"."paid_in_60"
-
-​    ,"a"."paid_in_90"
-
-​    ,"a"."paid_in_120"
-
-   -- ,"a"."paid_in_180"
-
-   -- ,"a"."paid_in_365"
-
-​    --,COALESCE("a"."transaction_total",0.00) AS "transaction_total"
-
-​    --,"a"."transaction_count"
-
-​    ,"a"."trans_in_30"
-
-​    ,"a"."trans_in_60"
-
-​    ,"a"."trans_in_90"
-
-​    ,"a"."trans_in_120"
-
-​    /*,CASE WHEN CURRENT_DATE() < DATEADD('day',121,"a"."assigned_date") AND ("a"."paid_in_120" < "a"."initial_balance") THEN NULL ELSE
-
-​        CASE WHEN "a"."initial_balance" = 0 THEN 'false' ELSE
-
-​            CASE WHEN ("a"."paid_in_120" / "a"."initial_balance") >= 0.9 THEN 'true' ELSE 'false' END
-
-​        END
-
-​     END AS "pif_in_120"*/
-
-​     ,CASE WHEN CURRENT_DATE() < DATEADD('day',121,"a"."assigned_date") AND ("a"."paid_in_120" < "a"."initial_balance") THEN NULL ELSE
-
-​        CASE WHEN "a"."initial_balance" = 0 THEN 'false' ELSE
-
-​           -- CASE WHEN ("a"."paid_in_120" / "a"."initial_balance") >= 0.9 THEN 'true' ELSE 'false' END
-
-​            CASE WHEN "a"."paid_in_120" >= "a"."initial_balance"  THEN 'true' ELSE 'false' END
-
-​        END
-
-​     END AS "pif_in_120"
-
-FROM (
-
-SELECT "a"."ACCOUNT_ID" AS "account_id"
-
-​    ,"a"."CLIENT_ID" AS "client_id"
-
-​    ,"a"."PATIENT_AGE" AS "patient_age"
-
-​    ,LEFT(LPAD("a"."ZIP_CODE",5,'0'),5) AS "zip_code"
-
-​    ,COALESCE(NULLIF(NULLIF("a"."FINANCIAL_CLASS",'NULL'),''),'UNKNOWN') AS "financial_class"
-
-​    ,COALESCE(NULLIF(NULLIF("a"."PATIENT_TYPE",'NULL'),''),'UNKNOWN') AS "patient_type"
-
-​    ,COALESCE(NULLIF(NULLIF("a"."MED_SERVICE",'NULL'),''),'UNKNOWN') AS "med_service"
-
-​    ,"a"."STATUS_CODE" AS "status_code"
-
-​    ,"a"."PREVIOUS_STATUS_CODE" AS "previous_status_code"
-
-​    ,CASE WHEN "a"."EMPLOYER" IN ('NULL','UNKNOWN') THEN '0' ELSE '1' END AS "employer_known"
-
-​    ,"a"."EMPLOYED" AS "is_employed"
-
-​    ,"a"."ASSIGNED_DATE"::DATE AS "assigned_date"
-
-​    ,"a"."LETTERS_SENT" AS "letter_sent"
-
-​    ,"a"."INITIAL_BALANCE" AS "initial_balance"
-
-​    ,"a"."CANCELLED_AMOUNT" AS "cancelled_balance"
-
-​    --,COUNT(DISTINCT "b"."ID") AS "transaction_count"
-
-​    ,COUNT(DISTINCT CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',30,"a"."ASSIGNED_DATE"::DATE) THEN "b"."ID" END) AS "trans_in_30" -- Cant use as features
-
-​    ,COUNT(DISTINCT CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',60,"a"."ASSIGNED_DATE"::DATE) THEN "b"."ID" END) AS "trans_in_60" -- Cant use as features
-
-​    ,COUNT(DISTINCT CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',90,"a"."ASSIGNED_DATE"::DATE) THEN "b"."ID" END) AS "trans_in_90" -- Cant use as features
-
-​    ,COUNT(DISTINCT CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',120,"a"."ASSIGNED_DATE"::DATE) THEN "b"."ID" END) AS "trans_in_120" -- Cant use as features
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',30,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_30" -- Cant use as features
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',60,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_60" -- Cant use as features
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',90,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_90" -- Cant use as features
-
-​    ,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',120,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_120" -- Cant use as features
-
-​    --,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',180,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_180"
-
-​    --,SUM(CASE WHEN "b"."TRANS_DATE"::DATE <= DATEADD('day',365,"a"."ASSIGNED_DATE"::DATE) THEN "b"."AMOUNT" ELSE 0.00 END) AS "paid_in_365"
-
-​    --,COALESCE(SUM("b"."AMOUNT"),'0.00') AS "transaction_total"
-
-FROM "SQUIDBITS"."PFS_GROUP"."ACCOUNTS" AS "a"
-
-LEFT JOIN "SQUIDBITS"."PFS_GROUP"."TRANSACTION_RECORDS" AS "b" ON "a"."ACCOUNT_ID" = "b"."ACCOUNT_ID"
-
-WHERE "a"."CLIENT_ID" LIKE 'BH%'
-
-GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15) AS "a"
-
-LEFT JOIN "SQUIDBITS"."PFS_GROUP"."ZIP_DETAILS" AS "b" ON "a"."zip_code" = LPAD("b"."ZIP_CODE",5,'0')
-
-WHERE  
-
-​    --"a"."transaction_total" >= 0 AND  
-
-​    "a"."assigned_date" < CURRENT_DATE()-121
-
-​    AND  "cancelled_balance" = 0
-
-​    AND "initial_balance" >0
-
-;
-
-The table that is produced from the above SQL query should be the base table used in all remaining iterations of the model.  
 
 When the output from the query above was pushed through Kraken, the Highest performing algorithm was a Random Forest Classifier. The F1 score was an 84%, recall and precision were 81% and 86% respectively and the AUC was .941.  
 
@@ -530,11 +201,27 @@ The latter three models will include behavioral data such as:
 
 -what was the paid amount by 30 days?(and 60 days and 90 days depending on the model)
 
+#### New Direction
+
+During a call between Recess and BigSquid on 3/14, we discussed how the data that we were collecting and feeding into the model was going to help us answer business questions and eventually lead to operationalization. Our objective was to get money faster, so we wanted to spend company resources on the people that are more likely to PIF earlier rather than later. Our model included data on people that were going to PIF in 30+ days, which is way more than we want to wait.
+
+This forced us to reconsider the data that we were feeding to the model. We now understand that we need to create a new model, with data that is representative of what we want the outcome to be. That is, predict from day one, when the new patient comes in to our database, either predict how many days the patient will take to pay via regression algorithms or predict if a patient will pay within x days (18 currently) via classification algorithms.
+
+Additionally, we have a lot of 'UNKNOWN's and 'nulls' coming from hospital side data collection. We have to remove those values and create blanks so the model does not take the null values as strings and makes predictions accordingly (i.e. if a patient has a null, he will pay in x days).
+
+Concerning the validation of our model, we will consider AUC and logarithmic loss to calculate our error. Log loss is a loss function used for binary classification problems.
+$$
+\begin{align*}
+H_p(q) = -\frac{1}{N}\sum_{i=1}^{N}y_i\cdot log(p(y_i))+(1-y_i)\cdot log(1-p(y_i))
+\end{align*}
+$$
+This equation says that for each N, we calculate the log probability of $$y_i$$ (PIF) and conversely the probability of not PIF.
+
 ### Software
 
-Windows 10, Mac OS X, Linux ([Solus](https://github.com/solus-project/budgie-desktop))
+Windows 10, Linux ([Solus Budgie](https://github.com/solus-project/budgie-desktop) v. 3.9999)
 
-Kraken (proprietary data science platform used by [BigSquid](https://bigsquid.com)
+Kraken (proprietary data science platform used by [BigSquid](https://bigsquid.com))
 
 [Snowflake](https://snowflake.com)
 
@@ -544,7 +231,7 @@ Microsoft SQL Server Management Studio v. 12 ([SSMS](https://docs.microsoft.com/
 
 Python 3.6 (Packages: [Pandas](https://github.com/pandas-dev/pandas), [Sci-Kit Learn](https://scikit-learn.org/stable/user_guide.html), [Numpy](https://docs.scipy.org/doc/numpy/), [Matplotlib](https://matplotlib.org/), [datascience](http://data8.org/datascience/))
 
-[R](https://www.r-project.org/) v. 3.5, RStudio (Packages: Tidyverse)
+[R](https://www.r-project.org/) v. 3.5, RStudio (Packages: [Tidyverse](https://github.com/tidyverse/tidyverse))
 
 ### Select Timelines
 
